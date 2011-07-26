@@ -25,6 +25,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.regionserver.StoreFile;
 import org.apache.hadoop.hbase.util.Bytes;
 
 /**
@@ -46,7 +47,7 @@ public class TableAdmin {
 	TableAdmin(byte[] tableName) {
 		this.tableName = tableName;
 		try {
-			admin = new HBaseAdmin(new HBaseConfiguration());
+			admin = new HBaseAdmin(HBaseConfiguration.create());
 			if (!admin.tableExists(tableName)) {
 				desc = new HTableDescriptor(this.tableName);
 				admin.createTable(desc);
@@ -124,12 +125,12 @@ public class TableAdmin {
 		
 
 
-		public FamilyAdmin enableBloomFilter() {
+		public FamilyAdmin enableBloomFilter(StoreFile.BloomType bloomType) {
 			HColumnDescriptor columnDescriptor = desc.getFamily(familyName);
-			if (!columnDescriptor.isBloomfilter()) {
+			if (columnDescriptor.getBloomFilterType() == StoreFile.BloomType.NONE) {
 				LOG.info("Enable Bloom Filter for family [" + Bytes.toString(familyName) + "].");
 				disableTable();
-				columnDescriptor.setBloomfilter(true);
+				columnDescriptor.setBloomFilterType(bloomType);
 				desc.addFamily(columnDescriptor);
 				return modifyAndEnable();
 			}

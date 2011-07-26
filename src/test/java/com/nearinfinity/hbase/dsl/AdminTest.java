@@ -19,11 +19,13 @@ package com.nearinfinity.hbase.dsl;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.regionserver.StoreFile;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Test;
 
@@ -40,34 +42,36 @@ public class AdminTest extends BaseTest {
 		hBase.removeTable(TEST_TABLE);
 		hBase.defineTable(TEST_TABLE).family(TEST_FAM);
 
-		HBaseAdmin hBaseAdmin = new HBaseAdmin(new HBaseConfiguration());
+		HBaseAdmin hBaseAdmin = new HBaseAdmin(HBaseConfiguration.create());
 		HTableDescriptor tableDescriptor = hBaseAdmin.getTableDescriptor(Bytes.toBytes(TEST_TABLE));
 		HColumnDescriptor family = tableDescriptor.getFamily(Bytes.toBytes(TEST_FAM));
 
-		assertFalse(family.isBloomfilter());
+		assertEquals(StoreFile.BloomType.NONE, family.getBloomFilterType());
 		assertFalse(family.isInMemory());
 		assertTrue(family.isBlockCacheEnabled()); // default value
 	}
 
 	@Test
 	public void reconfigureTable() throws Exception {
-		hBase.defineTable(TEST_TABLE).family(TEST_FAM).inMemory().enableBloomFilter().disableBlockCache();
+		hBase.defineTable(TEST_TABLE).family(TEST_FAM).inMemory().enableBloomFilter(
+                StoreFile.BloomType.ROW).disableBlockCache();
 
-		HBaseAdmin hBaseAdmin = new HBaseAdmin(new HBaseConfiguration());
+		HBaseAdmin hBaseAdmin = new HBaseAdmin(HBaseConfiguration.create());
 		HTableDescriptor tableDescriptor = hBaseAdmin.getTableDescriptor(Bytes.toBytes(TEST_TABLE));
 		HColumnDescriptor family = tableDescriptor.getFamily(Bytes.toBytes(TEST_FAM));
 
-		assertTrue(family.isBloomfilter());
+		assertEquals(StoreFile.BloomType.ROW, family.getBloomFilterType());
 		assertTrue(family.isInMemory());
 		assertFalse(family.isBlockCacheEnabled());
 
-		hBase.defineTable(TEST_TABLE).family(TEST_FAM).inMemory().enableBloomFilter().disableBlockCache();
+		hBase.defineTable(TEST_TABLE).family(TEST_FAM).inMemory().enableBloomFilter(
+                StoreFile.BloomType.ROW).disableBlockCache();
 
-		hBaseAdmin = new HBaseAdmin(new HBaseConfiguration());
+		hBaseAdmin = new HBaseAdmin(HBaseConfiguration.create());
 		tableDescriptor = hBaseAdmin.getTableDescriptor(Bytes.toBytes(TEST_TABLE));
 		family = tableDescriptor.getFamily(Bytes.toBytes(TEST_FAM));
 
-		assertTrue(family.isBloomfilter());
+		assertEquals(StoreFile.BloomType.ROW, family.getBloomFilterType());
 		assertTrue(family.isInMemory());
 		assertFalse(family.isBlockCacheEnabled());
 	}

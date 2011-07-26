@@ -27,12 +27,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableNotFoundException;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.HTablePool;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -58,7 +60,7 @@ public class HBase<QUERY_OP_TYPE extends QueryOps<ROW_ID_TYPE>, ROW_ID_TYPE> {
 	private static final int MAX_QUEUE_SIZE = 1024;
 	private Map<byte[], Queue<Put>> putsMap = new TreeMap<byte[], Queue<Put>>(Bytes.BYTES_COMPARATOR);
 	private Map<byte[], Queue<Delete>> deletesMap = new TreeMap<byte[], Queue<Delete>>(Bytes.BYTES_COMPARATOR);
-	private HBaseConfiguration conf;
+	private Configuration conf;
 	private HTablePool pool;
 	private Class<?> whereClauseType;
 	private TypeDriver typeDriver = new TypeDriver().registerAllKnownTypes();
@@ -70,15 +72,15 @@ public class HBase<QUERY_OP_TYPE extends QueryOps<ROW_ID_TYPE>, ROW_ID_TYPE> {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public HBase(Class<ROW_ID_TYPE> idType, HBaseConfiguration conf) {
+	public HBase(Class<ROW_ID_TYPE> idType, Configuration conf) {
 		this((Class<QUERY_OP_TYPE>)(Class) QueryOps.class,idType, conf);
 	}
 	
 	protected HBase(Class<QUERY_OP_TYPE> whereClauseType, Class<ROW_ID_TYPE> idType) {
-		this(whereClauseType,idType, new HBaseConfiguration());
+		this(whereClauseType,idType, HBaseConfiguration.create());
 	}
 	
-	protected HBase(Class<QUERY_OP_TYPE> whereClauseType, Class<ROW_ID_TYPE> idType, HBaseConfiguration conf) {
+	protected HBase(Class<QUERY_OP_TYPE> whereClauseType, Class<ROW_ID_TYPE> idType, Configuration conf) {
 		this.whereClauseType = whereClauseType;
 		this.idType = idType;
 		this.conf = conf;
@@ -415,7 +417,7 @@ public class HBase<QUERY_OP_TYPE extends QueryOps<ROW_ID_TYPE>, ROW_ID_TYPE> {
 	}
 
 	protected Result getResult(byte[] tableName, Get get) {
-		HTable table = pool.getTable(tableName);
+		HTableInterface table = pool.getTable(tableName);
 		try {
 			return table.get(get);
 		} catch (IOException e) {
@@ -439,7 +441,7 @@ public class HBase<QUERY_OP_TYPE extends QueryOps<ROW_ID_TYPE>, ROW_ID_TYPE> {
 	}
 
 	private void flushDeletes(byte[] tableName, Queue<Delete> deletes) {
-		HTable table = pool.getTable(tableName);
+		HTableInterface table = pool.getTable(tableName);
 		try {
 			table.delete(new ArrayList<Delete>(deletes));
 		} catch (IOException e) {
@@ -451,7 +453,7 @@ public class HBase<QUERY_OP_TYPE extends QueryOps<ROW_ID_TYPE>, ROW_ID_TYPE> {
 	}
 
 	private void flushPuts(byte[] tableName, Queue<Put> puts) {
-		HTable table = pool.getTable(tableName);
+		HTableInterface table = pool.getTable(tableName);
 		try {
 			table.put(new ArrayList<Put>(puts));
 		} catch (IOException e) {

@@ -49,11 +49,7 @@ public class ResultRow<ROW_ID_TYPE> implements Row<ROW_ID_TYPE> {
 	
 	@Override
 	public <U> U value(byte[] family, byte[] qualifier, Class<U> c) {
-		byte[] value = null;
-		if (family == null) {
-			value = result.getValue(qualifier);
-		}
-		value = result.getValue(family, qualifier);
+		byte[] value = result.getValue(family, qualifier);
 		if (value == null) {
 			return null;
 		}
