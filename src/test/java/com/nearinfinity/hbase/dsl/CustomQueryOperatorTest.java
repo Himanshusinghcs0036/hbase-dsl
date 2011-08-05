@@ -24,19 +24,37 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.client.HTable;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * @author Aaron McCurry
  */
 public class CustomQueryOperatorTest {
+	
+	private final static HBaseTestingUtility TEST_UTIL = new HBaseTestingUtility();
 
+	
 	protected static final String FAM_A = "famA";
 	protected static final String FAM_B = "famB";
 	protected static final String TABLE = "test";
 	protected HBase<MyQueryOps<String>, String> hBase;
 	protected HTable hTable;
+	
+
+	@BeforeClass
+	public static void setUpBeforeClass() throws Exception {
+		TEST_UTIL.startMiniCluster(1);
+	}
+
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
+		TEST_UTIL.shutdownMiniCluster();
+	}
+	
 
 	@SuppressWarnings("unchecked")
 	@Test
@@ -45,36 +63,43 @@ public class CustomQueryOperatorTest {
 		hBase.defineTable(TABLE).family(FAM_A).family(FAM_B);
 		hBase.truncateTable(TABLE);
 		hTable = new HTable(TABLE);
-		
-		hBase.save(TABLE).row("1234").family(FAM_A).col("col1", "val1").col("col2", "val1");
-		hBase.save(TABLE).row("1235").family(FAM_A).col("col1", "val2").col("col2", "val2");
+
+		hBase.save(TABLE).row("1234").family(FAM_A).col("col1", "val1")
+				.col("col2", "val1");
+		hBase.save(TABLE).row("1235").family(FAM_A).col("col1", "val2")
+				.col("col2", "val2");
 		hBase.save(TABLE).row("1236").family(FAM_A).col("col2", "val2");
-		
 
 		final Iterator<String> ids = Arrays.asList("1235").iterator();
-		hBase.scan(TABLE).where().family(FAM_A).col("col1").myFunc("val2").foreach(new ForEach<Row<String>>() {
-			@Override
-			public void process(Row<String> row) {
-				assertTrue(ids.hasNext());
-				assertEquals(ids.next(), row.getId());
-			}
-		});
+		hBase.scan(TABLE)//
+				.where()//
+				.family(FAM_A)//
+				.col("col1")//
+				.myFunc("val2")//
+				.foreach(new ForEach<Row<String>>() {
+					@Override
+					public void process(Row<String> row) {
+						assertTrue(ids.hasNext());
+						assertEquals(ids.next(), row.getId());
+					}
+				});
 		assertFalse(ids.hasNext());
 	}
-	
+
 	public static class MyQueryOps<I> extends QueryOpsDelegate<QueryOps<I>, I> {
 
-		public MyQueryOps(Where<QueryOps<I>, I> whereScanner, byte[] family, byte[] qualifier) {
+		public MyQueryOps(Where<QueryOps<I>, I> whereScanner, byte[] family,
+				byte[] qualifier) {
 			super(whereScanner, family, qualifier);
 			this.whereScanner = whereScanner;
 		}
-		
+
 		@SuppressWarnings("unchecked")
 		public Where<MyQueryOps<I>, I> myFunc(String s) {
 			Where<? extends QueryOps<I>, I> eq = super.eq(s);
 			return (Where<MyQueryOps<I>, I>) eq;
 		}
-		
+
 	}
 
 }
