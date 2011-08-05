@@ -19,19 +19,34 @@ package com.nearinfinity.hbase.dsl;
 
 import java.io.IOException;
 
+import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.client.HTable;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 
 /**
  * @author Aaron McCurry
  */
 public abstract class BaseTest {
 
+	private final static HBaseTestingUtility TEST_UTIL = new HBaseTestingUtility();
+
 	protected static final String FAM_A = "famA";
 	protected static final String FAM_B = "famB";
 	protected static final String TABLE = "test";
 	protected HBase<QueryOps<String>, String> hBase;
 	protected HTable hTable;
+
+	@BeforeClass
+	public static void setUpBeforeClass() throws Exception {
+		TEST_UTIL.startMiniCluster(1);
+	}
+	
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
+		TEST_UTIL.shutdownMiniCluster();
+	}
 
 	@Before
 	public void setUp() throws IOException {
@@ -40,5 +55,7 @@ public abstract class BaseTest {
 		hBase.truncateTable(TABLE);
 		hTable = new HTable(TABLE);
 	}
+
+
 
 }
