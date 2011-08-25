@@ -88,4 +88,6 @@ public interface Family {
 	 */
 	<U> List<U> valuesDescTimestamp(String qualifier, Class<U> c);
 	<U> List<U> valuesDescTimestamp(byte[] qualifier, Class<U> c);
+	
+    void foreach(ForEach<Column> forEach);
 }
