@@ -19,6 +19,7 @@ package com.nearinfinity.hbase.dsl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -108,6 +109,15 @@ public class ResultRow<ROW_ID_TYPE> implements Row<ROW_ID_TYPE> {
 			public <U> List<U> valuesDescTimestamp(byte[] qualifier, Class<U> c) {
 				return ResultRow.this.valuesDescTimestamp(family, qualifier, c);
 			}
+			
+            @Override
+            public void foreach(ForEach<Column> forEach) {
+                NavigableMap<byte[], byte[]> familyMap = result.getFamilyMap(family);
+                for (Map.Entry<byte[], byte[]> entry : familyMap.entrySet()) {
+                    Column column = new ResultColumn(ResultRow.this.hBase, entry.getKey(), entry.getValue());
+                    forEach.process(column);
+                }
+            }
 		};
 	}
 

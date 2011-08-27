@@ -66,5 +66,23 @@ public class FetchTest extends BaseTest {
 		assertEquals(new BigInteger("1234"), row.value(FAM_A, "bigint", BigInteger.class));
 		assertEquals(new BigDecimal("1234.1234"), row.value(FAM_A, "bigdec", BigDecimal.class));
 	}
+	
+	
+	@Test
+    public void forEachColumn() throws IOException {
+        Date d = new Date();
+        Put put = new Put(Bytes.toBytes("1456"));
+        put.add(Bytes.toBytes(FAM_A), Bytes.toBytes("col1"), Bytes.toBytes("value1"));
+        put.add(Bytes.toBytes(FAM_B), Bytes.toBytes("1234"), Bytes.toBytes("table1"));
+
+        hTable.put(put);
+        hBase.fetch(TABLE).row("1456").family(FAM_B).foreach(new ForEach<Column>() {
+            @Override
+            public void process(Column col) {
+                assertEquals("1234", col.qualifier());
+                assertEquals("table1", col.value(String.class));
+            }
+        });
+    }
 
 }
